@@ -21,6 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
+    "prettytable>=3.18.0",
     "pydantic>=2.13.4",
     "pygit2>=1.19.3",
     "pyyaml>=6.0.3",
