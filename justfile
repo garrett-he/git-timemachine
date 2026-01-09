@@ -24,6 +24,11 @@ format:
 test:
     uv run pytest
 
+# Run continuous integration
+ci:
+    just check
+    just test
+
 # Build the project
 build:
     uv build

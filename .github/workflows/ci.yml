@@ -10,27 +10,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: extractions/setup-just@v4
-
-      - uses: astral-sh/setup-uv@v5
-
-      - name: Install dependencies
-        run: just install
-
-      - name: Run checkers
-        run: just check
-
-  test:
+  ci:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: 
+        python-version:
           - "3.12"
           - "3.13"
           - "3.14"
@@ -46,5 +31,5 @@ jobs:
       - name: Install dependencies
         run: just install
 
-      - name: Run tests
-        run: just test
+      - name: Run continuous integration
+        run: just ci

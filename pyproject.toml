@@ -16,17 +16,18 @@ classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3 :: Only",
-
     "Programming Language :: Python :: 3.12",
-
     "Programming Language :: Python :: 3.13",
-
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
+    "pydantic>=2.13.4",
+    "pygit2>=1.19.3",
+    "pyyaml>=6.0.3",
     "typer>=0.26.8",
 ]
 optional-dependencies.dev = [
+    "chance>=0.110",
     "pre-commit>=4.6.1",
     "pyproject-fmt>=2.25.3",
     "pyrefly>=1.1.1",
@@ -34,6 +35,7 @@ optional-dependencies.dev = [
     "pytest-cov>=7.1.0",
     "ruff>=0.16.0",
     "rumdl>=0.2.41",
+    "types-pyyaml>=6.0.12.20260724",
 ]
 urls.Documentation = "https://github.com/garrett-he/git-timemachine/blob/main/README.md"
 urls.Homepage = "https://github.com/garrett-he/git-timemachine"
