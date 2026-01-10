@@ -1,6 +1,6 @@
 """Settings and state models for git-timemachine."""
 
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import TypeVar
 
@@ -36,6 +36,7 @@ class Settings(BaseConfig):
     """Application settings."""
 
     max_repo_daily_commits: int = Field(default=5, gt=0)
+    max_total_daily_commits: int = Field(default=15, gt=0)
     jitter_min: int = Field(default=600, gt=0)
     jitter_max: int = Field(default=3600, gt=0)
 
@@ -44,3 +45,5 @@ class States(BaseConfig):
     """Persistent state tracking last commit time and update checks."""
 
     last_commit_time: datetime = Field(default_factory=datetime.now)
+    current_commit_date: date = Field(default_factory=date.today)
+    daily_commit_count: int = Field(default=0, ge=0)

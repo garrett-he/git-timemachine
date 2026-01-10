@@ -51,5 +51,5 @@ def main(
     ctx.ensure_object(dict)
 
     ctx.obj['repo_dir'] = repo_dir if repo_dir else Path.cwd()
-    ctx.obj['config'] = Settings.load(settings_file)
+    ctx.obj['settings'] = Settings.load(settings_file)
     ctx.obj['states'] = States.load(states_file)

@@ -103,3 +103,81 @@ def assert_new_commit(repo: Repository, runner: CliRunner, gtm_settings: Setting
 
     commit_range = range(gtm_settings.jitter_min - 1, gtm_settings.jitter_max + 1)
     assert int(new_commit.author.time - last_commit_time.timestamp()) in commit_range
+
+
+@pytest.mark.usefixtures('gtm_states')
+def test_exception_total_daily_commit_limit(empty_repo: Repository, runner: CliRunner, gtm_settings: Settings) -> None:
+    """Test that exceeding the total daily commit limit (across all repos) raises an error."""
+    gtm_settings.max_total_daily_commits = 1
+    gtm_settings.max_repo_daily_commits = 10
+    gtm_settings.save()
+
+    # First commit — should succeed
+    repo_add_new_file(empty_repo)
+    result = runner.invoke(app, ['-C', empty_repo.workdir, 'commit', '--', '--message', chance.sentence()])
+    assert not result.exception
+
+    # Second commit on the same day — should fail due to total daily limit
+    repo_add_new_file(empty_repo)
+    result = runner.invoke(app, ['-C', empty_repo.workdir, 'commit', '--', '--message', chance.sentence()])
+    assert result.exception
+    assert 'Exceeded the total daily commit limit: 1' in result.output
+
+
+@pytest.mark.usefixtures('gtm_states')
+def test_exception_total_daily_commit_limit_cross_repo(
+    empty_repo: Repository, nonempty_repo: Repository, runner: CliRunner, gtm_settings: Settings
+) -> None:
+    """Test that total daily limit is enforced across different repositories."""
+    gtm_settings.max_total_daily_commits = 1
+    gtm_settings.max_repo_daily_commits = 10
+    gtm_settings.save()
+
+    # Commit in the first repo — should succeed
+    repo_add_new_file(empty_repo)
+    result = runner.invoke(app, ['-C', empty_repo.workdir, 'commit', '--', '--message', chance.sentence()])
+    assert not result.exception
+
+    # Commit in a different repo on the same day — should be rejected
+    repo_add_new_file(nonempty_repo)
+    result = runner.invoke(app, ['-C', nonempty_repo.workdir, 'commit', '--', '--message', chance.sentence()])
+    assert result.exception
+    assert 'Exceeded the total daily commit limit: 1' in result.output
+
+
+@pytest.mark.usefixtures('gtm_states')
+def test_total_daily_commit_count_resets_next_day(
+    empty_repo: Repository, runner: CliRunner, gtm_settings: Settings
+) -> None:
+    """Test that the total daily commit count resets when the date changes."""
+    gtm_settings.max_total_daily_commits = 2
+    gtm_settings.save()
+
+    # Day 1 — first commit succeeds
+    repo_add_new_file(empty_repo)
+    result = runner.invoke(
+        app, ['-C', empty_repo.workdir, 'commit', '--at', '2030-06-15T10:00:00', '--', '--message', 'day1']
+    )
+    assert not result.exception
+
+    # Day 2 — first commit on a new day should succeed (count resets)
+    repo_add_new_file(empty_repo)
+    result = runner.invoke(
+        app, ['-C', empty_repo.workdir, 'commit', '--at', '2030-06-16T10:00:00', '--', '--message', 'day2a']
+    )
+    assert not result.exception
+
+    # Day 2 — second commit should still succeed (limit is 2)
+    repo_add_new_file(empty_repo)
+    result = runner.invoke(
+        app, ['-C', empty_repo.workdir, 'commit', '--at', '2030-06-16T11:00:00', '--', '--message', 'day2b']
+    )
+    assert not result.exception
+
+    # Day 2 — third commit should fail (exceeds limit)
+    repo_add_new_file(empty_repo)
+    result = runner.invoke(
+        app, ['-C', empty_repo.workdir, 'commit', '--at', '2030-06-16T12:00:00', '--', '--message', 'day2c']
+    )
+    assert result.exception
+    assert 'Exceeded the total daily commit limit: 2' in result.output

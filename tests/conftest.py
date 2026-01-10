@@ -80,11 +80,15 @@ def gtm_settings() -> Generator[Settings, None, None]:
     """Provide a temporary settings file and set env vars."""
     with tempfile.NamedTemporaryFile(mode='w+', delete=False) as file:
         max_repo_daily_commits = 5
+        max_total_daily_commits = 15
         jitter_min = 600
         jitter_max = 3600
 
         file.write(
-            f'max_repo_daily_commits: {max_repo_daily_commits}\njitter_min: {jitter_min}\njitter_max: {jitter_max}\n'
+            f'max_total_daily_commits: {max_total_daily_commits}\n'
+            f'max_repo_daily_commits: {max_repo_daily_commits}\n'
+            f'jitter_min: {jitter_min}\n'
+            f'jitter_max: {jitter_max}\n'
         )
         file.flush()
 
@@ -100,9 +104,15 @@ def gtm_settings() -> Generator[Settings, None, None]:
 def gtm_states() -> Generator[States, None, None]:
     """Provide a temporary states file and set env vars."""
     with tempfile.NamedTemporaryFile(mode='w+', delete=False) as file:
-        last_commit_time = chance.date(2023, 1, 1).astimezone().strftime('%Y-%m-%dT%H:%M:%S')
+        last_commit_time = chance.date(2023, 1, 1).astimezone()
+        last_commit_time_str = last_commit_time.strftime('%Y-%m-%dT%H:%M:%S')
+        last_commit_date_str = last_commit_time.strftime('%Y-%m-%d')
 
-        file.write(f'last_commit_time: {last_commit_time}')
+        file.write(
+            f'last_commit_time: {last_commit_time_str}\n'
+            f'current_commit_date: {last_commit_date_str}\n'
+            f'daily_commit_count: 0\n'
+        )
         file.flush()
 
         os.environ['GIT_TIMEMACHINE_STATES'] = file.name

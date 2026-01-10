@@ -24,12 +24,12 @@ def commit_command(
 ) -> None:
     """Record a commit on repository at the specified time node."""
     repo_dir = ctx.obj['repo_dir']
-    config = ctx.obj['config']
+    settings = ctx.obj['settings']
     states = ctx.obj['states']
 
-    # Resolve jitter values: inline options take precedence over config
-    effective_jitter_min = jitter_min if jitter_min is not None else config.jitter_min
-    effective_jitter_max = jitter_max if jitter_max is not None else config.jitter_max
+    # Resolve jitter values: inline options take precedence over settings
+    effective_jitter_min = jitter_min if jitter_min is not None else settings.jitter_min
+    effective_jitter_max = jitter_max if jitter_max is not None else settings.jitter_max
 
     # Handle --at option: parse datetime and use as base time
     if at is not None:
@@ -42,12 +42,27 @@ def commit_command(
 
     repo = Repository(discover_repository(repo_dir))
 
+    # Validate commit prerequisites before mutating state
+    is_same_day = commit_time.date() == states.current_commit_date
+    new_daily_count = (states.daily_commit_count + 1) if is_same_day else 1
+
     try:
         check_repo_commit_time(repo, commit_time)
         check_repo_commit_status(repo)
-        check_repo_max_daily_commits(repo, commit_time, config.max_repo_daily_commits)
+
+        if new_daily_count > settings.max_total_daily_commits:
+            raise GitError(f'Exceeded the total daily commit limit: {settings.max_total_daily_commits}.')
+
+        check_repo_max_daily_commits(repo, commit_time, settings.max_repo_daily_commits)
     except GitError as exc:
         ctx.fail(str(exc))
+
+    # All checks passed — update persisted state
+    if is_same_day:
+        states.daily_commit_count = new_daily_count
+    else:
+        states.current_commit_date = commit_time.date()
+        states.daily_commit_count = 1
 
     random.seed()
 
