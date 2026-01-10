@@ -89,7 +89,7 @@ disable = [
     "MD041",
 ]
 MD004.style = "dash"
-MD007.indent = 2
+MD007.indent = 4
 MD013.line_length = 120
 MD013.strict = false
 MD013.code_blocks = false
