@@ -8,12 +8,13 @@ from typing import Annotated
 import typer
 
 from git_timemachine import __version__
-from git_timemachine.commands import commit, review
+from git_timemachine.commands import commit, review, shift
 from git_timemachine.config import Settings, States
 
 app = typer.Typer(no_args_is_help=True)
 app.command(name='commit')(commit.commit_command)
 app.command(name='review')(review.review_command)
+app.command(name='shift')(shift.shift_command)
 
 
 def version_callback(value: bool) -> None:
