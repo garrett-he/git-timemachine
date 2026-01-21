@@ -11,7 +11,7 @@ keywords = [ "committing", "git", "repository", "timemachine" ]
 license = { text = "MIT" }
 maintainers = [ { name = "Garrett HE", email = "garrett.he@outlook.com" } ]
 authors = [ { name = "Garrett HE", email = "garrett.he@outlook.com" } ]
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.15"
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
