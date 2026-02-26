@@ -3,20 +3,32 @@
 from __future__ import annotations
 
 import random
-from datetime import timedelta
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 import typer
 
+if TYPE_CHECKING:
+    from git_timemachine.config import States
 
-def shift_command(
-    ctx: typer.Context,
-    days: int = typer.Option(..., '--days', '-d', help='Shift by N days'),
-    hours_min: int | None = typer.Option(None, '--hours-min', '-h', help='Minimum hour (0-23) for random time'),
-    hours_max: int | None = typer.Option(None, '--hours-max', '-H', help='Maximum hour (0-23) for random time'),
-) -> None:
-    """Adjust the persisted timestamp in the state file forward or backward."""
-    states = ctx.obj['states']
 
+def shift_last_commit_time(
+    states: States,
+    days: int,
+    hours_min: int | None = None,
+    hours_max: int | None = None,
+) -> datetime:
+    """Shift `states.last_commit_time` and persist the new value.
+
+    Args:
+        states: Persisted state to update.
+        days: Number of days to shift.
+        hours_min: Minimum hour for a randomized time of day.
+        hours_max: Maximum hour for a randomized time of day.
+
+    Returns:
+        The new `last_commit_time`.
+    """
     delta = timedelta(days=days or 0)
     base = states.last_commit_time + delta
 
@@ -34,6 +46,20 @@ def shift_command(
         new_time = base
 
     states.last_commit_time = new_time
-
     states.save()
-    typer.echo(f'New timestamp: {states.last_commit_time.isoformat()}')
+
+    return new_time
+
+
+def shift_command(
+    ctx: typer.Context,
+    days: int = typer.Option(..., '--days', '-d', help='Shift by N days'),
+    hours_min: int | None = typer.Option(None, '--hours-min', '-h', help='Minimum hour (0-23) for random time'),
+    hours_max: int | None = typer.Option(None, '--hours-max', '-H', help='Maximum hour (0-23) for random time'),
+) -> None:
+    """Adjust the persisted timestamp in the state file forward or backward."""
+    states: States = ctx.obj['states']
+
+    new_time = shift_last_commit_time(states, days, hours_min=hours_min, hours_max=hours_max)
+
+    typer.echo(f'New timestamp: {new_time.isoformat()}')

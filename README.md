@@ -44,6 +44,7 @@ git-timemachine review
 ## Features
 
 - Record commits at calculated or explicit timestamps
+- Retime an existing commit range at fresh timestamps with backup safety
 - Randomized time jitter so commit times look natural
 - Per-repository and global daily commit limits
 - Shift the persisted base timestamp forward or backward
@@ -120,6 +121,47 @@ git-timemachine commit --jitter-min 60 --jitter-max 600 -m "Update docs"
 > respected. It then applies random jitter in `[jitter_min, jitter_max]`
 > seconds and runs `git commit` with matching `GIT_AUTHOR_DATE` and
 > `GIT_COMMITTER_DATE` values.
+
+### retime
+
+Re-record every commit from a starting commit up to `HEAD` at new timestamps.
+Commit messages, author identities, and file contents (including binary files)
+are preserved. Before rewriting, the current branch is copied to
+`<branch>-gtm-backup`.
+
+```text
+git-timemachine retime [COMMIT_ID] [--continue] [--jitter-min SECONDS] [--jitter-max SECONDS]
+```
+
+| Option                     | Description                                                                                        |
+| -------------------------- | -------------------------------------------------------------------------------------------------- |
+| `COMMIT_ID`                | Starting commit: full SHA or abbreviated SHA of at least 6 characters. Required unless `--continue`. |
+| `--continue`               | Resume the interrupted session stored in `.git/git-timemachine-session.yaml`.                       |
+| `-j, --jitter-min SECONDS` | Minimum time jitter (overrides `jitter_min`).                                                      |
+| `-J, --jitter-max SECONDS` | Maximum time jitter (overrides `jitter_max`).                                                      |
+
+```sh
+git-timemachine retime a1b2c3
+git-timemachine retime a1b2c3d4 --jitter-min 60 --jitter-max 600
+git-timemachine retime --continue
+```
+
+> [!IMPORTANT]
+> `retime` rewrites history in place. The original branch tip is kept in
+> `<branch>-gtm-backup`; when that branch already exists the command stops
+> before touching anything. Merge commits, detached `HEAD`, dirty worktrees,
+> and non-ancestor start commits are rejected. When a daily commit limit is
+> reached, the command asks whether to shift `last_commit_time` by one day.
+> Declining the shift, or a failing Git hook, keeps the commits already
+> replayed, restores the working tree, and exits with a non-zero status.
+> Repository hooks still run, so a hook that modifies staged content can change
+> the replayed commit contents.
+>
+> Progress is saved after every commit in
+> `.git/git-timemachine-session.yaml`. After any interruption (declined shift,
+> hook failure, Git error, or `Ctrl-C`) run `git-timemachine retime --continue`
+> to resume from the next commit. While a session exists, a plain
+> `retime COMMIT_ID` is refused; delete the session file to start over.
 
 ### shift
 

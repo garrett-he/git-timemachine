@@ -28,8 +28,8 @@ Key technologies:
     - `config.py` - `BaseConfig`, `Settings`, `States` pydantic models with YAML
       load/save.
     - `git.py` - validation helpers and the external `git commit` runner.
-    - `commands/` - one module per subcommand: `commit`, `shift`, `review`,
-      `states`.
+    - `commands/` - one module per subcommand: `commit`, `retime`, `shift`,
+      `review`, `states`.
 - `tests/` - pytest suite mirroring the command modules.
 - `justfile` - task runner recipes.
 - `pyproject.toml` - project metadata, dependencies, and tool config.
@@ -92,6 +92,9 @@ Global options must precede the subcommand.
 - Global options: `--repo-dir/-C PATH`, `--version`.
 - `commit` - record a commit at a calculated timestamp; forwards extra args to
   `git commit`. Options: `--jitter-min/-j`, `--jitter-max/-J`, `--at`.
+- `retime` - replay `COMMIT_ID..HEAD` in place with fresh timestamps.
+  `COMMIT_ID` accepts a full SHA or an abbreviated SHA of at least 6 characters.
+  Options: `--jitter-min/-j`, `--jitter-max/-J`.
 - `shift` - move the persisted `last_commit_time` by days, optionally
   randomizing the time of day. Options: `--days/-d`, `--hours-min/-h`,
   `--hours-max/-H`.
@@ -108,6 +111,8 @@ variables.
   `max_total_daily_commits`, `jitter_min`, `jitter_max`.
 - States: `~/.git-timemachine/states.yaml` (`GIT_TIMEMACHINE_STATES`). Tracks
   `last_commit_time`, `current_commit_date`, `daily_commit_count`.
+- Retime session: `<repo>/.git/git-timemachine-session.yaml` (per repository).
+  Holds replay progress, snapshot commits, backup branch, and expected HEAD.
 
 ## Commit Command Internals
 
@@ -123,6 +128,30 @@ variables.
 5. Run `git commit` via `git_external_commit` with `GIT_AUTHOR_DATE` and
    `GIT_COMMITTER_DATE` set to the final time, then persist
    `last_commit_time`.
+
+## Retime Command Internals
+
+`retime` rewrites `COMMIT_ID..HEAD` in place. Preserve these invariants:
+
+1. Validate branch state, clean worktree, merge-free linear range, and
+   ancestor relationship before creating the backup branch or rewriting.
+2. Snapshot the commit range (oid and emptiness) before any rewrite; never
+   re-read the live history while replaying.
+3. Create `<branch>-gtm-backup` and never overwrite an existing backup.
+4. Replay each snapshot with `record_commit(..., reuse_from=oid,
+   allow_empty=is_empty)`, which injects `-C <oid> --date=<final>` so both
+   author and committer times change while message and author identity stay.
+5. On `DailyCommitLimitError`, prompt before shifting `last_commit_time` by one
+   day; on refusal or any failure, restore index/worktree to the current HEAD
+   and keep already replayed commits.
+6. Root commits use `update-ref -d` plus `read-tree --empty` and
+   `clean -fd` before replaying, since there is no parent to reset to.
+7. Persist progress to `.git/git-timemachine-session.yaml` after each successful
+   commit; `--continue` validates branch, backup target, remaining objects, and
+   the expected HEAD before resuming. Delete the session only after success.
+8. Never start a new replay while a session file exists; require `--continue`
+   or explicit deletion. `Ctrl-C` exits with code 130 after restoring the
+   worktree and keeps the session resumable.
 
 ## Build and Deployment
 
