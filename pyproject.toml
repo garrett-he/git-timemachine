@@ -4,7 +4,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "git-timemachine"
-version = "0.2.0"
+version = "3.2.0"
 description = "A command-line tool that helps you record commits on Git repositories at any time node."
 readme = "README.md"
 keywords = [ "committing", "git", "repository", "timemachine" ]
