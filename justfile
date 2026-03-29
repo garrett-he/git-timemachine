@@ -33,6 +33,16 @@ ci:
 build:
     uv build
 
+# Build a standalone onefile executable with Nuitka
+dist:
+    uv run --extra nuitka python -m nuitka \
+        --mode=onefile \
+        --assume-yes-for-downloads \
+        --output-dir=dist \
+        --output-filename=git-timemachine \
+        --include-package=git_timemachine \
+        nuitka_entry.py
+
 # Publish the project
 publish:
     uv publish

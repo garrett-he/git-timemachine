@@ -38,6 +38,7 @@ optional-dependencies.dev = [
     "rumdl>=0.2.41",
     "types-pyyaml>=6.0.12.20260724",
 ]
+optional-dependencies.nuitka = [ "nuitka[onefile]>=4.3.5" ]
 urls.Documentation = "https://github.com/garrett-he/git-timemachine/blob/main/README.md"
 urls.Homepage = "https://github.com/garrett-he/git-timemachine"
 urls.Issues = "https://github.com/garrett-he/git-timemachine/issues"
